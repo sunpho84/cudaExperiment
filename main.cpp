@@ -1,4 +1,4 @@
-#include "global.hpp"
+//#include "global.hpp"
 
 __managed__ double* x;
 __managed__ double* y;
@@ -28,6 +28,7 @@ int main()
   int blockSize = 256;
   int numBlocks = (N + blockSize - 1) / blockSize;
   add<<<numBlocks, blockSize>>>(N);
+  cudaDeviceSynchronize();
   
   cudaFree(x);
   cudaFree(y);
