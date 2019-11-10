@@ -1,7 +1,7 @@
 #ifndef _GLOBAL_HPP
 #define _GLOBAL_HPP
 
-__managed__ extern double* x;
-__managed__ extern double* y;
+__managed__ static double* x;
+__managed__ static double* y;
 
 #endif
