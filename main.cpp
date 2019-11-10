@@ -26,6 +26,8 @@ int main()
   int numBlocks = (N + blockSize - 1) / blockSize;
   add<<<numBlocks, blockSize>>>(N);
   
+  cudaDeviceSynchronize();
+  
   cudaFree(x);
   cudaFree(y);
 }
