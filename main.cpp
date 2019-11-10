@@ -1,5 +1,8 @@
 #include "global.hpp"
 
+__managed__ double* x;
+__managed__ double* y;
+
 const int N=1<<20;
 
 __host__ __device__
