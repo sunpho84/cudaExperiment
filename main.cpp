@@ -2,6 +2,8 @@
 
 const int N=1<<20;
 
+__managed__ double u=10;
+
 __host__ __device__
 void add(double* x,double* y,int i)
 {
