@@ -39,18 +39,18 @@ struct A
 {
   A()
   {
-    printf("creating A\n");
+    printf("creating A at %p\n",this);
   }
   
-  A(const A&)
+  A(const A& oth)
   {
-    printf("copying A\n");
+    printf("copying A from %p to %p\n",&oth,this);
   }
   
   __host__ __device__
   ~A()
   {
-    printf("destroying A\n");
+    printf("destroying A at %p\n",this);
   }
 };
 
