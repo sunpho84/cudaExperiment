@@ -44,6 +44,7 @@ int is_device_pointer(void* ptr) {
     return 1;
   } else {
     // The copy failed, so the pointer is not a valid device pointer.
+      printf("error: %s\n",cudaGetErrorString(err));
     return 2;
   }
 }
