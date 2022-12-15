@@ -35,31 +35,54 @@ void add(int n)
       f(i);
   }
 
+struct A;
+
+struct F;
+
+
+struct F
+{
+  int nRef;
+  
+  F() :
+    nRef(0)
+  {
+  }
+  
+  A getRef();
+};
+
 struct A
 {
-  int* const count;
+  int& nRef;
   
-  A() :
-    count(new int(1))
+  A(F& f) :
+    nRef(f.nRef)
   {
-    printf("creating A at %p, count(%p): %d\n",this,count,*count);
+    nRef++;
+    printf("creating A at %p, nRef(%p): %d\n",this,&nRef,nRef);
   }
   
   A(const A& oth) :
-    count(oth.count)
+    nRef(oth.nRef)
   {
-    (*count)++;
-    printf("copying A from %p to %p, count(%p): %d\n",&oth,this,count,*count);
+    nRef++;
+    printf("copying A from %p to %p, nRef(%p): %d\n",&oth,this,&nRef,nRef);
   }
   
   __host__ __device__
   ~A()
   {
-    (*count)--;
-    printf("destroying A at %p, count(%p): %d\n",this,count,*count);
-    if((*count)==0) delete count;
+    nRef--;
+    printf("destroying A at %p, nRef(%p): %d\n",this,&nRef,nRef);
+    if(nRef==0) printf("action!\n");
   }
 };
+
+A F::getRef()
+{
+  return *this;
+}
 
 int main()
 {
@@ -76,10 +99,10 @@ int main()
   
   printf("---------\n");
 
-  A a;
+  F a;
   
   cuda_generic_kernel<<<10,10>>>(0,100,
-				 [a] __device__(const int i)
+				 [a=a.getRef()] __device__(const int i)
   {
   });
   cudaDeviceSynchronize();
