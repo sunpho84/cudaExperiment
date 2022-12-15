@@ -174,7 +174,7 @@ int main()
   F a;
   
   cuda_generic_kernel<<<10,10>>>(0,100,
-				 [a=a.getRef()] __device__(const int i) mutable
+				 [a=a.getConstRef()] __device__(const int i) mutable
   {
     glbA=&a;
   });
