@@ -37,20 +37,27 @@ void add(int n)
 
 struct A
 {
-  A()
+  int* const count;
+  
+  A() :
+    count(new int(1))
   {
-    printf("creating A at %p\n",this);
+    printf("creating A at %p, count(%p): %d\n",this,count,*count);
   }
   
-  A(const A& oth)
+  A(const A& oth) :
+    count(oth.count)
   {
-    printf("copying A from %p to %p\n",&oth,this);
+    (*count)++;
+    printf("copying A from %p to %p, count(%p): %d\n",&oth,this,count,*count);
   }
   
   __host__ __device__
   ~A()
   {
-    printf("destroying A at %p\n",this);
+    (*count)--;
+    printf("destroying A at %p, count(%p): %d\n",this,count,*count);
+    if((*count)==0) delete count;
   }
 };
 
