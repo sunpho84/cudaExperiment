@@ -47,6 +47,17 @@ struct F
   F() :
     nRef(0)
   {
+    printf("Creating F\n");
+  }
+  
+  ~F()
+  {
+    printf("Destroying F\n");
+  }
+  
+  void action()
+  {
+    printf("action!\n");
   }
   
   A getRef();
@@ -54,9 +65,12 @@ struct F
 
 struct A
 {
+  F& f;
+  
   int& nRef;
   
   A(F& f) :
+    f(f),
     nRef(f.nRef)
   {
     nRef++;
@@ -64,6 +78,7 @@ struct A
   }
   
   A(const A& oth) :
+    f(oth.f),
     nRef(oth.nRef)
   {
     nRef++;
@@ -75,7 +90,9 @@ struct A
   {
     nRef--;
     printf("destroying A at %p, nRef(%p): %d\n",this,&nRef,nRef);
-    if(nRef==0) printf("action!\n");
+#ifndef __CUDA_ARCH__
+    if(nRef==0) f.action();
+#endif
   }
 };
 
