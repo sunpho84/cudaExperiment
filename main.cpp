@@ -25,6 +25,7 @@ int is_device_pointer_(void* ptr) {
       return 1;
     } else {
       // The pointer is not a device pointer.
+      printf("error: %s\n",cudaGetErrorString(err));
       return 2;
     }
   } else {
