@@ -141,7 +141,7 @@ A F::getRef()
 {
   return *this;
 }
-__device__ int d;
+__device__ float d;
 
 int main()
 {
