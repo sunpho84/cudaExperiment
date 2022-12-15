@@ -13,7 +13,7 @@ const int N=1<<20;
 
 #include <cuda_runtime.h>
 
-int is_device_pointer(void* ptr) {
+int is_device_pointer_(void* ptr) {
   // Check the attributes of the given pointer.
   cudaPointerAttributes attributes;
   cudaError_t err = cudaPointerGetAttributes(&attributes, ptr);
@@ -32,6 +32,21 @@ int is_device_pointer(void* ptr) {
     return 0;
   }
 }
+
+int is_device_pointer(void* ptr) {
+  // Try to copy data to or from the given pointer.
+  float data = 3.14f;
+  cudaError_t err = cudaMemcpy(ptr, &data, sizeof(float), cudaMemcpyHostToDevice);
+
+  if (err == cudaSuccess) {
+    // The copy was successful, so the pointer is a valid device pointer.
+    return 1;
+  } else {
+    // The copy failed, so the pointer is not a valid device pointer.
+    return 2;
+  }
+}
+
 __host__ __device__
 void add(double* x,double* y,int i)
 {
