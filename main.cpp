@@ -1,9 +1,11 @@
 #include <cstdio>
 #include "global.hpp"
 
-const int N=1<<20;
+#include <iostream>
 
-__managed__ double u=10;
+using namespace std;
+
+const int N=1<<20;
 
 __host__ __device__
 void add(double* x,double* y,int i)
@@ -54,6 +56,9 @@ struct A
 
 int main()
 {
+  cout<<"ecco"<<endl;
+  cout<<u<<endl;
+
   cudaMallocManaged(&x,N*sizeof(double));
   cudaMallocManaged(&y,N*sizeof(double));
   
