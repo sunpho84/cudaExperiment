@@ -11,20 +11,27 @@ using namespace std;
 
 const int N=1<<20;
 
-bool is_device_ptr(void* ptr) {
+#include <cuda_runtime.h>
+
+int is_device_pointer(void* ptr) {
   // Check the attributes of the given pointer.
   cudaPointerAttributes attributes;
   cudaError_t err = cudaPointerGetAttributes(&attributes, ptr);
 
   if (err == cudaSuccess) {
     // The pointer is valid. Check if it is a device pointer.
-    return (attributes.type == cudaMemoryTypeDevice);
+    if (attributes.type == cudaMemoryTypeDevice) {
+      // The pointer is a device pointer.
+      return 1;
+    } else {
+      // The pointer is not a device pointer.
+      return 2;
+    }
   } else {
     // The pointer is not valid.
-    return false;
+    return 0;
   }
 }
-
 __host__ __device__
 void add(double* x,double* y,int i)
 {
@@ -145,7 +152,7 @@ int main()
   
   printf("waiting for end\n");
   cudaDeviceSynchronize();
-  printf("glb ptr: %p, %d\n",glbA,is_device_ptr(glbA));
+  printf("glb ptr: %p, %d\n",glbA,is_device_pointer(glbA));
   
   printf("---------\n");
   
