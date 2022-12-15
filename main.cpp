@@ -158,6 +158,11 @@ int main()
   printf("---------\n");
   
   printf("d: %p, %d\n",&d,is_device_pointer(&d));
+
+  float* dev_ptr;
+  cudaError_t err = cudaMalloc(&dev_ptr, N * sizeof(float));
+    printf("m: %p, %d\n",dev_ptr,is_device_pointer(dev_ptr));
+  cudaFree(dev_ptr);
   
   cudaFree(x);
   cudaFree(y);
