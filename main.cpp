@@ -126,6 +126,7 @@ A F::getRef()
 {
   return *this;
 }
+__device__ int d;
 
 int main()
 {
@@ -156,6 +157,7 @@ int main()
   
   printf("---------\n");
   
+  printf("d: %p, %d\n",&d,is_device_pointer(&d));
   
   cudaFree(x);
   cudaFree(y);
