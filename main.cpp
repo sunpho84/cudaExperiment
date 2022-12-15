@@ -143,7 +143,7 @@ struct A
   }
 };
 
-__managed__ A<F>* glbA;
+__managed__ void* glbA;
 
 A<F> F::getRef()
 {
