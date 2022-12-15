@@ -77,15 +77,14 @@ void add(int n)
       f(i);
   }
 
+template <typename T>
 struct A;
 
 struct F;
 
-__managed__ A* glbA;
-
 struct F
 {
-  int nRef;
+  mutable int nRef;
   
   F() :
     nRef(0)
@@ -103,16 +102,19 @@ struct F
     printf("action!\n");
   }
   
-  A getRef();
+  A<F> getRef();
+  
+  A<const F> getConstRef() const;
 };
 
+template <typename T>
 struct A
 {
-  F& f;
+  T& f;
   
   int& nRef;
   
-  A(F& f) :
+  A(T& f) :
     f(f),
     nRef(f.nRef)
   {
@@ -134,12 +136,21 @@ struct A
     nRef--;
     printf("destroying A at %p, nRef(%p): %d\n",this,&nRef,nRef);
 #ifndef __CUDA_ARCH__
-    if(nRef==0) f.action();
+    if(nRef==0)
+      if constexpr(not std::is_const_v<T>)
+	f.action();
 #endif
   }
 };
 
-A F::getRef()
+__managed__ A<F>* glbA;
+
+A<F> F::getRef()
+{
+  return *this;
+}
+
+A<const F> F::getConstRef() const
 {
   return *this;
 }
