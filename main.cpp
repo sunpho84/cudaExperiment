@@ -1,4 +1,5 @@
 #include <cstdio>
+#include <unistd.h>
 #include "global.hpp"
 
 #include <iostream>
@@ -121,7 +122,7 @@ int main()
   cuda_generic_kernel<<<10,10>>>(0,100,
 				 [a=a.getRef()] __device__(const int i)
   {
-    sleep(1);
+    __nanosleep(1000000000);
   });
   
   printf("waiting for end\n");
