@@ -22,6 +22,168 @@ constexpr bool CompilingForDevice=
 #endif
   ;
 
+enum class StorLoc{ON_HOST,ON_DEVICE};
+
+template <template <StorLoc> typename T>
+struct ManualUnifier
+{
+  T<StorLoc::ON_HOST> _hostData;
+  
+  T<StorLoc::ON_DEVICE> _deviceData;
+  
+  __device__ T<StorLoc::ON_DEVICE>& _data(std::bool_constant<true>)
+  {
+    return _deviceData;
+  }
+  
+  __host__ T<StorLoc::ON_HOST>& _data(std::bool_constant<false>)
+  {
+    return _hostData;
+  }
+  
+  __host__ __device__ decltype(auto) data()
+  {
+    if constexpr(CompilingForDevice)
+      return _deviceData;
+    else
+      return _hostData;
+  }
+  
+  __host__ void sync_host_with_device()
+  {
+    _hostData=_deviceData;
+  }
+  
+  __host__ void sync_device_with_host()
+  {
+    _deviceData=_hostData;
+  }
+  
+  bool allocated;
+  
+  void alloc(const int& ext_n)
+  {
+    _hostData.alloc(ext_n);
+    _deviceData.alloc(ext_n);
+    
+    allocated=true;
+  }
+  
+  void dealloc()
+  {
+    _hostData.dealloc();
+    _deviceData.dealloc();
+    
+    allocated=false;
+  }
+  
+  ManualUnifier()
+  {
+    allocated=false;
+  }
+  
+  ~ManualUnifier()
+  {
+    if(allocated)
+      dealloc();
+  }
+};
+
+template <StorLoc SL>
+struct DataHolder
+{
+  static constexpr StorLoc sL=SL;
+  
+  int n;
+  
+  int* data;
+  
+  void alloc(const int& ext_n)
+  {
+    n=ext_n;
+    if constexpr(SL==StorLoc::ON_HOST)
+      data=new int[n];
+    else
+      cudaMalloc(&data,sizeof(int)*n);
+  }
+  
+  void dealloc()
+  {
+    if constexpr(SL==StorLoc::ON_HOST)
+      delete[] data;
+    else
+      cudaFree(data);
+    
+    data=nullptr;
+    n=0;
+  }
+  
+  template <StorLoc SOURCE_SL>
+  DataHolder& operator=(const DataHolder<SOURCE_SL>& oth)
+  {
+    static constexpr StorLoc DEST_SL=SL;
+    
+    constexpr cudaMemcpyKind kind=
+      (SOURCE_SL==StorLoc::ON_HOST)
+		?((DEST_SL==StorLoc::ON_HOST)?
+		  cudaMemcpyHostToHost:
+		  cudaMemcpyHostToDevice)
+		:((DEST_SL==StorLoc::ON_HOST)?
+		  cudaMemcpyDeviceToHost:
+		  cudaMemcpyDeviceToDevice);
+    
+    cudaMemcpy(data,oth.data,sizeof(int)*n,kind);
+    
+    return *this;
+  }
+};
+
+void testManual()
+{
+  ManualUnifier<DataHolder> manual;
+  
+  manual.alloc(10);
+  
+  for(int i=0;i<10;i++)
+    manual.data().data[i]=i;
+  
+  manual.sync_device_with_host();
+  
+  ManualUnifier<DataHolder> manual2;
+  manual2.alloc(10);
+  manual2._deviceData=manual._deviceData;
+  manual2.sync_host_with_device();
+  
+  for(int i=0;i<10;i++)
+    printf("%d %d \n",manual.data().data[i],manual2.data().data[i]);
+  
+  // constexpr StorLoc SL=std::remove_pointer<decltype(manual.data())>::type::sL;
+  // //std::integral_constant<StorLoc,SL>& a=1;
+  // static_assert((SL==StorLoc::ON_DEVICE) xor (not CompilingForDevice),"ma come 1");
+  // //static_assert(SL==StorLoc::ON_HOST or not CompilingForDevice,"ma come 2");
+}
+
+
+// __device__ int _aaa_device;
+
+// int _aaa_host;
+
+// __device__ int& _aaa(std::bool_constant<true>)
+//   {
+//     return _aaa_device;
+//   }
+  
+// __host__ int& _aaa(std::bool_constant<false>)
+//   {
+//     return _aaa_host;
+//   }
+
+// __host__ __device__ int& aaa()
+// {
+//   return _aaa(std::bool_constant<CompilingForDevice>());
+// }
+
+  
 template <typename IMin,
 	  typename IMax,
 	  typename F>
@@ -35,56 +197,87 @@ void cuda_generic_kernel(const IMin min,
     f(i);
 }
 
-enum class StorLoc{ON_HOST,ON_DEVICE};
+// template <typename T>
+// struct Ref
+// {
+//   int* data;
+  
+//   int size;
+  
+//   Ref(int* data,const int& size) : data(data),size(size)
+//   {
+//   }
+// };
+
+// template <StorLoc SL>
+// struct Tens
+// {
+//   int* data;
+  
+//   int size;
+  
+//   __host__ Ref<Tens> GetRef() const
+//   {
+//     return Ref<Tens>(data,size);
+//   }
+  
+//   Tens() : data(nullptr),size(0)
+//   {
+//   }
+  
+//   Tens(const int size) : data(new int[size]),size(size)
+//   {
+//   }
+  
+//   ~Tens()
+//   {
+//     delete[] data;
+//     size=0;
+//   }
+  
+//   explicit Tens(const Tens&) =delete;
+  
+//   __host__ Tens(const Ref<Tens>& ref) : Tens(size)
+//   {
+//     memcpy(data,ref.data,sizeof(int)*size);
+//   }
+// };
 
 template <typename T>
-struct Ref
+struct Ex
 {
-  int* data;
+  T& s;
   
-  int size;
-  
-  Ref(int* data,const int& size) : data(data),size(size)
+  Ex(T& s) : s(s)
   {
   }
 };
 
-template <StorLoc SL>
-struct A
+struct S
 {
-  int* data;
+  explicit S(const S&) = delete;
+  // {
+  // }
   
-  int size;
-  
-  __host__ Ref<A> GetRef() const
+  S()
   {
-    return Ref<A>(data,size);
-  }
-  
-  A() : data(nullptr),size(0)
-  {
-  }
-  
-  A(const int size) : data(new int[size]),size(size)
-  {
-  }
-  
-  ~A()
-  {
-    delete[] data;
-    size=0;
-  }
-  
-  explicit A(const A&) =delete;
-  
-  __host__ A(const Ref<A>& ref) : A(size)
-  {
-    memcpy(data,ref.data,sizeof(int)*size);
   }
 };
+
+void t(Ex<S> s)
+{
+}
 
 void testNoCopiable()
 {
+  int e=1;;
+
+  {
+    //int& _e=e;
+    int e=e;
+    printf("%d %d\n",)
+  }
+  
   const int min=0;
   const int max=2;
   const int length=max-min;
@@ -93,14 +286,20 @@ void testNoCopiable()
   const dim3 block_dimension(nthreads);
   const dim3 grid_dimension((length+block_dimension.x-1)/block_dimension.x);
   
-  const A<StorLoc::ON_DEVICE> b;
-  auto _b=b.GetRef();
+  // const Tens<StorLoc::ON_DEVICE> b;
+  // auto _b=b.GetRef();
+  // aaa()=1;
+  
+  S s;
+  Ex<S> exs(s);
+  t(s);
   cuda_generic_kernel<<<block_dimension,grid_dimension>>>(min,max,
 							  [=] __device__(const int& index) mutable
 							  {
 							    if(index<max)
 							      {
-								_b;
+								// aaa()=1;
+								exs;
 							      }
 							  });
   cudaDeviceSynchronize();
@@ -120,6 +319,7 @@ void testNoCopiable()
 
 int main()
 {
+  testManual();
   // // std::cout<<a.ptr<<std::endl;
   
   // Aa bb;
@@ -191,5 +391,6 @@ int main()
 //       return _locVolhHost();
 // #endif
 //     }
+
 
 
