@@ -40,6 +40,7 @@ struct A;
 
 struct F;
 
+__managed__ A* glbA;
 
 struct F
 {
@@ -122,18 +123,12 @@ int main()
   cuda_generic_kernel<<<10,10>>>(0,100,
 				 [a=a.getRef()] __device__(const int i)
   {
-    clock_t start = clock();
-clock_t now;
-for (;;) {
-  now = clock();
-  clock_t cycles = now > start ? now - start : now + (0xffffffff - start);
-  if (cycles >= 1000000) {
-    break;
-  }
-} });
+    glbA=&a;
+  });
   
   printf("waiting for end\n");
   cudaDeviceSynchronize();
+  printf("glb ptr: %p\n",glbA);
   
   printf("---------\n");
   
